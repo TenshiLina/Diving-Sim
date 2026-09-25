@@ -46,9 +46,16 @@ const LensShader = {
     }`,
 };
 
-export function createComposer(renderer, scene, camera) {
+export function createComposer(renderer, scene, camera, { msaa = 4 } = {}) {
   const size = renderer.getDrawingBufferSize(new THREE.Vector2());
-  const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: 4 });
+  // Half-float keeps HDR highlights for bloom; fall back to 8-bit targets on
+  // GPUs that cannot render to half-float buffers.
+  const gl = renderer.getContext();
+  const halfOk = Boolean(gl.getExtension('EXT_color_buffer_half_float') || gl.getExtension('EXT_color_buffer_float'));
+  const rt = new THREE.WebGLRenderTarget(size.x, size.y, {
+    type: halfOk ? THREE.HalfFloatType : THREE.UnsignedByteType,
+    samples: msaa,
+  });
   const composer = new EffectComposer(renderer, rt);
   composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.35, 0.6, 0.85);

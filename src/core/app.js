@@ -5,13 +5,18 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { water } from '../water/underwater.js';
 import { createWaterDome, createSurface, createGodRays, createMarineSnow } from '../water/environment.js';
 import { createComposer } from './postfx.js';
+import { watchRenderer } from './diagnostics.js';
 
 export class App {
-  constructor(container, { shot = false } = {}) {
+  constructor(container, { shot = false, quality = 'high' } = {}) {
     this.container = container;
     this.shot = shot;
+    this.quality = quality;
+    const low = quality === 'low';
     const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: shot });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    watchRenderer(renderer);
+    // Phones have very high DPR; the per-pixel water shading is the main cost.
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, low ? 1.25 : 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
@@ -27,7 +32,7 @@ export class App {
     // Sunlight, refracted through the surface (so slightly steeper than in air).
     const sun = new THREE.DirectionalLight(0xfff4e0, 2.6);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.setScalar(low ? 1024 : 2048);
     const sc = sun.shadow.camera;
     sc.left = -12; sc.right = 12; sc.top = 12; sc.bottom = -12; sc.near = 1; sc.far = 60;
     sun.shadow.bias = -0.0004;
@@ -46,7 +51,7 @@ export class App {
     this.scene.add(this.surface);
     this.godRays = createGodRays();
     this.scene.add(this.godRays);
-    this.snow = createMarineSnow();
+    this.snow = createMarineSnow({ count: low ? 1500 : 3500 });
     this.scene.add(this.snow);
 
     this.controls = new OrbitControls(this.camera, renderer.domElement);
@@ -66,7 +71,7 @@ export class App {
       this._idle = setTimeout(() => (this.controls.autoRotate = !this.shot), 12000);
     });
 
-    const { composer, lens, bloom } = createComposer(renderer, this.scene, this.camera);
+    const { composer, lens, bloom } = createComposer(renderer, this.scene, this.camera, { msaa: low ? 0 : 4 });
     this.composer = composer;
     this.lens = lens;
     this.bloom = bloom;

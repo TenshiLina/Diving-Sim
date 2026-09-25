@@ -3,11 +3,14 @@ import { buildReef } from './scenes/reef.js';
 import { buildShowcase } from './scenes/showcase.js';
 import { DECOR, FISH } from './assets/catalog.js';
 import { setupUI } from './ui.js';
+import { installGlobalHandlers, showError, clearErrors, webgl2Problem, pickQuality } from './core/diagnostics.js';
+
+installGlobalHandlers();
 
 const params = new URLSearchParams(location.search);
 const shot = params.has('shot');
 const container = document.getElementById('app');
-const errorEl = document.getElementById('error');
+const quality = pickQuality();
 const known = (name) => Boolean(name && (DECOR[name] || FISH[name]));
 
 // The asset can come from ?asset=name or a #name deep link.
@@ -17,20 +20,28 @@ let app = null;
 
 function boot(asset) {
   if (app) app.dispose();
-  errorEl.textContent = '';
-  app = new App(container, { shot });
+  clearErrors();
+  app = new App(container, { shot, quality });
   try {
     if (asset) buildShowcase(app, asset);
     else buildReef(app);
   } catch (e) {
     console.error(e);
-    errorEl.textContent = String(e.message || e);
+    showError('The scene could not be built', e.stack || e.message || String(e));
   }
   window.app = app;
   return app;
 }
 
+const problem = webgl2Problem();
+if (problem) {
+  document.getElementById('loading')?.remove();
+  showError('This device or browser cannot show the aquarium', problem);
+  throw new Error(problem);
+}
 boot(initial);
+window.__reefStarted = true;
+document.getElementById('loading')?.remove();
 
 // Optional camera override for screenshots: ?cam=x,y,z&target=x,y,z
 const vec = (s) => s.split(',').map(Number);

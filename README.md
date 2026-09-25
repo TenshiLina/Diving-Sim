@@ -12,9 +12,29 @@ asset pipeline before building the full dive simulator.
 npm install
 npm run dev        # http://localhost:5173
 npm run build      # static bundle in dist/ (~170 kB gzipped, no binary assets)
+npm run build:single  # also writes dist/reef-aquarium.html, one self-contained file
 ```
 
-- `?asset=<name>` opens a single asset on the sand for look-dev, e.g.
+Open the app through a server (`npm run dev` or a deployed build), not by
+opening the repository's `index.html` directly. That file is the Vite source
+entry and only works once it has been built.
+
+### Deploying
+
+- **GitHub Pages:** `.github/workflows/pages.yml` builds on every push and
+  publishes `dist/`. One-time setup: go to **Settings → Pages → Build and
+  deployment → Source** and choose **GitHub Actions**.
+- **Single file:** `dist/reef-aquarium.html` has the app script inlined. Use
+  it for hosts that block separate script files, such as Claude artifacts, or
+  to share the aquarium as one file.
+- Add `?quality=low` or `?quality=high` to override the automatic choice.
+  Phones get the low tier by default, which lowers the resolution, turns off
+  MSAA and uses smaller shadows.
+- If something fails, the reason appears on screen: no WebGL 2, a shader that
+  won't compile on that GPU, the GPU resetting, or a script error. Include
+  that text when reporting a problem.
+
+- `?asset=<name>` or `#<name>` opens a single asset on the sand for look-dev, e.g.
   `?asset=clownfish`, `?asset=brainCoral`. The on-screen picker does the same.
 - Controls: drag to orbit, scroll/pinch to zoom, right-drag to pan. The camera
   auto-orbits when idle.
