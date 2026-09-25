@@ -46,6 +46,24 @@ const LensShader = {
     }`,
 };
 
+// Replaces NaN / Inf pixels with black and caps extreme HDR values before
+// bloom. One bad pixel is otherwise blurred by the bloom mips into a large
+// black blotch. The test inspects the float bits directly: fast-math shader
+// compilers (e.g. Metal on iOS) may optimise away isnan()/x != x checks.
+const SanitizeShader = {
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: LensShader.vertexShader,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    varying vec2 vUv;
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      uvec4 e = floatBitsToUint(c) & 0x7f800000u;
+      bool bad = any(equal(e, uvec4(0x7f800000u)));
+      gl_FragColor = bad ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(clamp(c.rgb, 0.0, 256.0), c.a);
+    }`,
+};
+
 export function createComposer(renderer, scene, camera, { msaa = 4 } = {}) {
   const size = renderer.getDrawingBufferSize(new THREE.Vector2());
   // Half-float keeps HDR highlights for bloom; fall back to 8-bit targets on
@@ -58,6 +76,7 @@ export function createComposer(renderer, scene, camera, { msaa = 4 } = {}) {
   });
   const composer = new EffectComposer(renderer, rt);
   composer.addPass(new RenderPass(scene, camera));
+  composer.addPass(new ShaderPass(SanitizeShader));
   const bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.35, 0.6, 0.85);
   composer.addPass(bloom);
   const lens = new ShaderPass(LensShader);

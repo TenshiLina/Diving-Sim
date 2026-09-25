@@ -23,6 +23,8 @@ export class App {
     renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
+    // If anything ever fails to draw, show open water rather than black.
+    renderer.setClearColor(water.uWaterHorizon.value, 1);
     container.appendChild(renderer.domElement);
     this.renderer = renderer;
 

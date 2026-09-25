@@ -14,12 +14,14 @@ export function createWaterDome() {
     uniforms: { ...water },
     side: THREE.BackSide,
     depthWrite: false,
+    depthTest: false,
     vertexShader: /* glsl */ `
       varying vec3 vDir;
       void main() {
         vDir = normalize(position);
-        vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        gl_Position = p.xyww; // at far plane
+        // Drawn first with depth testing off, so it needs no far-plane tricks
+        // (pinning it exactly to the far plane is fragile on some GPUs).
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }`,
     fragmentShader: /* glsl */ `
       ${WATER_PARS}
@@ -30,10 +32,15 @@ export function createWaterDome() {
         gl_FragColor = vec4(c, 1.0);
       }`,
   });
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(500, 32, 16), mat);
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), mat);
   mesh.frustumCulled = false;
   mesh.renderOrder = -1000;
-  mesh.onBeforeRender = (_r, _s, camera) => mesh.position.copy(camera.position);
+  mesh.onBeforeRender = (_r, _s, camera) => {
+    mesh.position.copy(camera.position);
+    // Stay well inside the far plane whatever the scene sets it to.
+    mesh.scale.setScalar(camera.far * 0.5);
+    mesh.updateMatrixWorld();
+  };
   mesh.name = 'waterDome';
   return mesh;
 }
@@ -180,7 +187,9 @@ export function createGodRays({ count = 34, radius = 18, seed = 3 } = {}) {
         vec3 axisPt = top + L * along;
         // Cylindrical billboard: widen perpendicular to both the ray and view.
         vec3 toCam = normalize(cameraPosition - axisPt);
-        vec3 side = normalize(cross(L, toCam));
+        vec3 side = cross(L, toCam);
+        float sideLen = length(side);
+        side = sideLen > 1e-5 ? side / sideLen : vec3(1.0, 0.0, 0.0);
         float w = aOffset.w * (1.0 + 0.6 * -position.y); // rays spread as they fall
         vec3 wp = axisPt + side * position.x * w;
         vWorld = wp;
@@ -197,9 +206,11 @@ export function createGodRays({ count = 34, radius = 18, seed = 3 } = {}) {
       varying float vPhase;
       void main() {
         float edge = sin(vUv.x * 3.14159);
-        edge = pow(edge, 2.5);
+        // sin(pi) is a tiny negative number in float; pow() of a negative base
+        // is undefined and returns NaN on Apple GPUs, so clamp first.
+        edge = pow(max(edge, 0.0), 2.5);
         float along = 1.0 - vUv.y; // 0 at top, 1 at bottom
-        float fall = smoothstep(0.0, 0.08, along) * pow(1.0 - along, 1.6);
+        float fall = smoothstep(0.0, 0.08, along) * pow(max(1.0 - along, 0.0), 1.6);
         // Flicker as surface waves focus / defocus the light.
         float flick = 0.55 + 0.45 * sin(uTime * 0.9 + vPhase) * sin(uTime * 0.53 + vPhase * 1.7);
         // Fade out when the camera is inside / close to a shaft.
