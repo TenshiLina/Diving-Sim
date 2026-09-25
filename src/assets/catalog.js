@@ -8,6 +8,8 @@ import { createAnemone } from './coral/anemone.js';
 import { createSeaFan } from './coral/seaFan.js';
 import { createSeagrass } from './plants/seagrass.js';
 import { createRock } from './terrain/rocks.js';
+import { createGiantClam } from './invertebrates/giantClam.js';
+import { RAY_SPECIES } from './rays/rays.js';
 import { SPECIES } from './fish/species.js';
 import { buildFishSpecies } from './fish/fishBuilder.js';
 
@@ -19,14 +21,23 @@ export const DECOR = {
   seaFan: { label: 'Gorgonian sea fan', create: createSeaFan, size: 1.4 },
   seagrass: { label: 'Seagrass', create: createSeagrass, size: 0.9 },
   rock: { label: 'Reef rock', create: createRock, size: 1.4 },
+  giantClam: { label: 'Giant clam', create: createGiantClam, size: 0.9 },
 };
 
 const builtCache = new Map();
-export function getFish(name) {
-  if (!builtCache.has(name)) builtCache.set(name, buildFishSpecies(SPECIES[name]));
-  return builtCache.get(name);
+/** Built species (shared). `lite` is a lower-poly build for large schools. */
+export function getFish(name, { lite = false } = {}) {
+  const key = name + (lite ? ':lite' : '');
+  if (!builtCache.has(key)) {
+    builtCache.set(key, buildFishSpecies(SPECIES[name], lite ? { nx: 24, nt: 14, ns: 10, nr: 4 } : undefined));
+  }
+  return builtCache.get(key);
 }
 
 export const FISH = Object.fromEntries(
   Object.entries(SPECIES).map(([k, s]) => [k, { label: s.name, latin: s.latin, size: s.length * 3 }]),
+);
+
+export const RAYS = Object.fromEntries(
+  Object.entries(RAY_SPECIES).map(([k, s]) => [k, { label: s.name, latin: s.latin, size: s.length }]),
 );

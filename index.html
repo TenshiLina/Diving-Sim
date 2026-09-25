@@ -117,11 +117,82 @@
       [hidden] {
         display: none !important;
       }
+      .tour {
+        margin-top: 8px;
+        font-size: 11px;
+        color: #bff6ff;
+        letter-spacing: 0.02em;
+      }
+      .tour::before {
+        content: '';
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #5fe3ff;
+        margin-right: 6px;
+        vertical-align: 1px;
+        animation: pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        50% { opacity: 0.3; }
+      }
+      /* Touch swim controls: only on touch-first devices. */
+      .swim-ui {
+        display: none;
+      }
+      @media (pointer: coarse) {
+        .swim-ui {
+          display: block;
+        }
+      }
+      .swim-ui .joy {
+        position: fixed;
+        left: calc(24px + env(safe-area-inset-left, 0px));
+        bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+        width: 116px;
+        height: 116px;
+        border-radius: 50%;
+        background: rgba(4, 28, 38, 0.35);
+        border: 1px solid var(--panel-border);
+        touch-action: none;
+        display: grid;
+        place-items: center;
+      }
+      .swim-ui .knob {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: rgba(200, 245, 255, 0.35);
+        border: 1px solid rgba(220, 250, 255, 0.5);
+      }
+      .swim-ui .lift {
+        position: fixed;
+        right: calc(20px + env(safe-area-inset-right, 0px));
+        bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .swim-ui .lift button {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: 1px solid var(--panel-border);
+        background: rgba(4, 28, 38, 0.45);
+        color: var(--text);
+        font-size: 18px;
+        touch-action: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .tour::before { animation: none; }
+      }
     </style>
   </head>
   <body>
     <div id="app"></div>
     <div id="ui"></div>
+    <div id="touch"></div>
     <div id="loading">Loading the reef…</div>
     <div id="error" hidden></div>
     <noscript><div id="loading">The aquarium needs JavaScript turned on.</div></noscript>

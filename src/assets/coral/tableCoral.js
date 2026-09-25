@@ -12,10 +12,10 @@ const PALETTES = {
   teal: { top: '#5f8f8a', rim: '#d0fff4', under: '#2f4442', stalk: '#50584a' },
 };
 
-export function createTableCoral({ radius = 0.8, seed = 4, palette = 'sage', stalkHeight = 0.35 } = {}) {
+export function createTableCoral({ radius = 0.8, seed = 4, palette = 'sage', stalkHeight = 0.35, rings = 26, sectors = 96 } = {}) {
   const noise = new SimplexNoise(seed);
   const pal = Object.fromEntries(Object.entries(PALETTES[palette]).map(([k, v]) => [k, new THREE.Color(v)]));
-  const RS = 26, AS = 96;
+  const RS = rings, AS = sectors;
   const edge = (a) => radius * (1 + 0.14 * noise.noise3(Math.cos(a) * 1.3, Math.sin(a) * 1.3, 0.5) + 0.05 * noise.noise3(Math.cos(a) * 4, Math.sin(a) * 4, 2));
   // Plate height profile: slightly domed centre, gently up-turned rim.
   const surf = (r, R, a) => {

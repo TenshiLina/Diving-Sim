@@ -20,7 +20,15 @@ export function proceduralSurface(material, { glsl, uniforms = {}, key = '' }) {
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vObjPos;\nvarying vec3 vObjNrm;')
       .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\nvObjNrm = objectNormal;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObjPos = position;');
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        vObjPos = position;
+        #ifdef USE_INSTANCING
+        // Each instance samples a different patch of the pattern.
+        vObjPos.xz += instanceMatrix[3].xz * 0.61;
+        #endif`,
+      );
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
@@ -108,7 +116,13 @@ export function addSway(material, { amp = 0.08, freq = 1.0, stiffness = 2.0, cur
       .replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
-        transformed += swayOffset(position, aSway, aPhase);`,
+        {
+          vec3 swayP = position;
+          #ifdef USE_INSTANCING
+          swayP += instanceMatrix[3].xyz; // desynchronise instances
+          #endif
+          transformed += swayOffset(swayP, aSway, aPhase);
+        }`,
       );
   };
   return material;

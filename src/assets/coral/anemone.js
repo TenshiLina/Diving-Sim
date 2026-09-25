@@ -13,7 +13,7 @@ const PALETTES = {
   pink: { column: '#6a1f5a', disc: '#d8a0b0', tentBase: '#e0a8b8', tentTip: '#ffe4f0' },
 };
 
-export function createAnemone({ radius = 0.32, seed = 5, palette = 'classic', tentacles = 700 } = {}) {
+export function createAnemone({ radius = 0.32, seed = 5, palette = 'classic', tentacles = 700, radial = 6, tentacleSegs = 7 } = {}) {
   const rng = new Rng(seed);
   const pal = Object.fromEntries(Object.entries(PALETTES[palette]).map(([k, v]) => [k, new THREE.Color(v)]));
   const group = new THREE.Group();
@@ -72,7 +72,7 @@ export function createAnemone({ radius = 0.32, seed = 5, palette = 'classic', te
     // Tentacles lean outward, more so at the rim.
     const out = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
     const dir = new THREE.Vector3(rng.gauss(0, 0.15), 1, rng.gauss(0, 0.15)).addScaledVector(out, 0.15 + f * 0.9).normalize();
-    const seg = 7;
+    const seg = tentacleSegs;
     const pts = [];
     const radii = [];
     const phase = rng.float(0, 1);
@@ -89,7 +89,7 @@ export function createAnemone({ radius = 0.32, seed = 5, palette = 'classic', te
     const tipC = pal.tentTip;
     const baseC = pal.tentBase.clone().offsetHSL(rng.float(-0.02, 0.02), 0, rng.float(-0.05, 0.05));
     batch.add(pts, radii, {
-      radial: 6,
+      radial,
       cap: 'round',
       color: (i, t) => {
         const c = new THREE.Color().lerpColors(baseC, tipC, Math.pow(t, 4) * 0.8);

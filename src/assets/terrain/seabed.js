@@ -33,7 +33,7 @@ function periodicNoise(size, period, rand) {
   };
 }
 
-function makeSandTextures(size = 512, seed = 5) {
+export function makeSandTextures(size = 512, seed = 5) {
   const rand = mulberry32(seed);
   const n1 = periodicNoise(size, 8, rand);
   const n2 = periodicNoise(size, 32, rand);

@@ -47,7 +47,7 @@ for (const v of views) {
   const url = `http://localhost:${port}/?shot&${query}`;
   const t0 = Date.now();
   logs.length = 0;
-  await page.goto(url);
+  await page.goto(url, { waitUntil: 'commit', timeout: 120000 });
   try {
     await page.waitForFunction(() => window.__ready === true, null, { timeout: 180000 });
   } catch (e) {
@@ -61,6 +61,8 @@ for (const v of views) {
     return window.app.renderer.domElement.toDataURL('image/png');
   });
   writeFileSync(file, Buffer.from(dataUrl.split(',')[1], 'base64'));
+  const info = await page.evaluate(() => window.__info);
+  if (info && process.env.INFO) console.log('  ' + info);
   const errs = logs.filter((l) => /error|warn/i.test(l));
   console.log(`${file}  (${Date.now() - t0} ms)${errs.length ? '\n  ' + errs.slice(0, 8).join('\n  ') : ''}`);
 }

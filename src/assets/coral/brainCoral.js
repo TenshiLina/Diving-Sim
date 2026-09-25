@@ -11,11 +11,12 @@ const PALETTES = {
   green: { ridge: 0xa89a5a, valley: 0x6f9a52, tip: 0xe0e0a8 },
   honey: { ridge: 0xc89050, valley: 0xa0b068, tip: 0xf5e2b0 },
   lime: { ridge: 0x7a9a4a, valley: 0xc6df7a, tip: 0xe9f7aa },
+  moss: { ridge: 0x8a8a4a, valley: 0xb0c070, tip: 0xe0e8a8 },
 };
 
-export function createBrainCoral({ radius = 0.45, height = 0.75, seed = 3, palette = 'honey', grooveScale = 1 } = {}) {
+export function createBrainCoral({ radius = 0.45, height = 0.75, seed = 3, palette = 'honey', grooveScale = 1, segments = 1 } = {}) {
   const noise = new SimplexNoise(seed);
-  const geo = new THREE.SphereGeometry(1, 160, 96);
+  const geo = new THREE.SphereGeometry(1, Math.round(160 * segments), Math.round(96 * segments));
   const p = geo.attributes.position;
   const v = new THREE.Vector3();
   for (let i = 0; i < p.count; i++) {

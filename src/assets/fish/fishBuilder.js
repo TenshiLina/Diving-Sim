@@ -17,7 +17,7 @@ import { underwater } from '../../water/underwater.js';
 
 const TEX_W = 1024;
 
-export function buildFishSpecies(spec) {
+export function buildFishSpecies(spec, { nx = 56, nt = 36, ns = 24, nr = 8 } = {}) {
   const top = monotone(spec.top);
   const bottom = monotone(spec.bottom);
   const width = monotone(spec.width);
@@ -78,8 +78,8 @@ export function buildFishSpecies(spec) {
   const uvOf = (x, y) => [(x - xmin) / (xmax - xmin), (y - ymin) / (ymax - ymin)];
 
   // --- Body -----------------------------------------------------------------
-  const NX = 56;
-  const NT = 36;
+  const NX = nx;
+  const NT = nt;
   const pos = [];
   const uv = [];
   const idx = [];
@@ -157,7 +157,7 @@ export function buildFishSpecies(spec) {
 
   // --- Fins -----------------------------------------------------------------
   const fpos = [], fuv = [], fidx = [], ffin = [];
-  const NS = 24, NR = 8;
+  const NS = ns, NR = nr;
   for (const f of fins) {
     const off = fpos.length / 3;
     const pect = f.kind === 'pectoral' || f.kind === 'pelvic';

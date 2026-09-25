@@ -6,6 +6,7 @@ import { water } from '../water/underwater.js';
 import { createWaterDome, createSurface, createGodRays, createMarineSnow } from '../water/environment.js';
 import { createComposer } from './postfx.js';
 import { watchRenderer } from './diagnostics.js';
+import { SwimControls } from './swimControls.js';
 
 export class App {
   constructor(container, { shot = false, quality = 'high' } = {}) {
@@ -54,7 +55,7 @@ export class App {
     this.snow = createMarineSnow({ count: low ? 1500 : 3500 });
     this.scene.add(this.snow);
 
-    this.controls = new OrbitControls(this.camera, renderer.domElement);
+    this.orbit = this.controls = new OrbitControls(this.camera, renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.06;
     this.controls.autoRotate = !shot;
@@ -83,6 +84,18 @@ export class App {
     this._onResize = () => this.resize();
     window.addEventListener('resize', this._onResize);
     this.resize();
+  }
+
+  /** Switch from orbiting a target to first-person swimming. */
+  useSwimControls(opts = {}) {
+    this.orbit.dispose();
+    this.controls = new SwimControls(this.camera, this.renderer.domElement, { overlay: document.getElementById('touch'), ...opts });
+    return this.controls;
+  }
+
+  /** Where the sharpest shadows should be. */
+  focus(out) {
+    return this.controls.isSwim ? this.controls.focus(out) : out.copy(this.controls.target);
   }
 
   dispose() {
@@ -129,12 +142,12 @@ export class App {
     this.controls.update(dt);
     // Keep the camera in the water and off the sand.
     const cp = this.camera.position;
-    const floor = this.groundFn(cp.x, cp.z) + 0.2;
+    const floor = this.groundFn(cp.x, cp.z) + (this.controls.isSwim ? 0.6 : 0.2);
     if (cp.y < floor) cp.y = floor;
     const ceil = water.uSurfaceY.value - 0.25;
     if (cp.y > ceil) cp.y = ceil;
     // Shadow frustum follows the view target.
-    const t = this.controls.target;
+    const t = this.focus(this._focus || (this._focus = new THREE.Vector3()));
     this.sun.position.copy(water.uSunDir.value).multiplyScalar(30).add(t);
     this.sun.target.position.copy(t);
   }

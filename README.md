@@ -1,10 +1,15 @@
-# Reef Aquarium: a Great Barrier Reef diving sim proof of concept
+# Reef Aquarium: a Great Barrier Reef diving sim
 
-A small WebGL (three.js) reef "aquarium": one coral bommie on a sand flat, with a
-few resident fish. The goal is to settle the look, the water model and the
-asset pipeline before building the full dive simulator.
+A WebGL (three.js) dive simulator. It opens on a procedural Great Barrier
+Reef dive site. The original proof-of-concept aquarium, a single bommie with
+a few fish, is still available from the picker.
 
-![Reef overview](docs/reef.jpg)
+![Great Barrier Reef dive site](docs/gbr-reef.jpg)
+
+| | |
+| --- | --- |
+| ![Spur and groove](docs/gbr-spur.jpg) | ![Anemone with clownfish](docs/gbr-anemone.jpg) |
+| ![Giant clam](docs/gbr-clam.jpg) | ![Blue-spotted ribbontail ray](docs/gbr-ribbontail.jpg) |
 
 ## Running
 
@@ -34,14 +39,57 @@ entry and only works once it has been built.
   won't compile on that GPU, the GPU resetting, or a script error. Include
   that text when reporting a problem.
 
-- `?asset=<name>` or `#<name>` opens a single asset on the sand for look-dev, e.g.
-  `?asset=clownfish`, `?asset=brainCoral`. The on-screen picker does the same.
-- Controls: drag to orbit, scroll/pinch to zoom, right-drag to pan. The camera
-  auto-orbits when idle.
+- The **View** picker switches between the reef, the aquarium and single
+  assets. Deep links use `#aquarium` or `#<asset>`, for example `#giantClam`
+  or `#eagleRay`. `?asset=<name>` also works.
+- **Reef controls:** drag to look, WASD or the arrow keys to swim, Space/E to
+  rise, Q/C to sink, Shift to kick harder. On touch screens, use the left
+  stick and the ▲ ▼ buttons. When idle, the diver drifts on an auto-tour;
+  any input takes over.
+- **Aquarium and asset controls:** drag to orbit, scroll or pinch to zoom,
+  right-drag to pan.
+
+## The reef
+
+`src/scenes/gbr.js` builds the dive site from `src/assets/terrain/reefTerrain.js`.
+
+- **Terrain:** a fringing-reef profile. A shallow reef flat about 2.5 m deep
+  (hard pavement with sand pools) drops over the crest to a spur-and-groove
+  slope: coral ridges running down-slope, with sand channels between them.
+  The slope ends in a sand plain about 13 m deep with scattered bommies. Height
+  and a sand-to-reef substrate value are baked into grids. Placement, fish
+  steering and camera collision all read from them.
+- **Placement:** candidates on a jittered 0.7 m grid are kept by substrate and
+  a patchiness field. Each zone (flat, slope, bommie) has its own mix of
+  coral types. A spacing check stops colonies from overlapping. Seagrass
+  meadows, rocks and the odd clam go on the sand.
+- **Instancing and level of detail:** each type has several variants. They
+  are instanced in 12 m chunks, with a detailed version near the diver, a
+  light version further out, and nothing past the haze. Only nearby coral
+  casts shadows. That puts about 1,100 staghorns, 500 brain corals, 300 table
+  corals, 140 sea fans, 150 giant clams and 850 seagrass tufts on the reef.
+  Busy views draw about 7–10M triangles in 300–600 draw calls.
+- **Life:**
+  - clownfish families in the anemones;
+  - chromis clouds over staghorn;
+  - blue tang groups and butterflyfish pairs;
+  - blue-spotted ribbontail rays that cruise the sand and settle to rest;
+  - a trio of spotted eagle rays flying in formation over the slope.
+  Schools out of view keep simulating but aren't drawn.
+
+New assets in this build:
+
+- **Giant clam (Tridacna):** a fluted shell whose folds give the gape its
+  zigzag. The mantle is patterned, breathes slowly and glows slightly. It
+  comes in four colourways.
+- **Rays (`src/assets/rays/rays.js`):** one parametric disc-and-tail builder
+  with a GPU fin wave, used for two species:
+  - the blue-spotted ribbontail, which ripples its fin edges;
+  - the spotted eagle ray, which flaps its wings.
 
 ## What's in it
 
-**Fish.** Each fish is built from a side-view profile plus a painted side-view
+**Fish (aquarium and reef).** Each fish is built from a side-view profile plus a painted side-view
 pattern, and swims on the GPU with a travelling body wave and rowing pectoral fins
 (`src/assets/fish/`). Movement comes from boids steering.
 
@@ -94,7 +142,9 @@ src/
   scenes/      reef.js (the aquarium), showcase.js (single-asset viewer)
   util/        noise, curves, tube builder, GLSL snippets, reaction-diffusion
 tools/
-  screenshot.mjs   headless renders for visual iteration
+  screenshot.mjs   headless renders for visual iteration (reef: tour=0..1, near=clam|anemone|ribbontail|eagleRay|chromis)
+  probe.mjs        triangle budget per asset group, boot time
+  inline-build.mjs single-file build (npm run build:single)
   sheet.py         contact sheets of renders
 ```
 

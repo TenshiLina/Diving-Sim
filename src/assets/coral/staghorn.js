@@ -15,7 +15,7 @@ const PALETTES = {
   cream: ['#8a7a58', '#d8c89a', '#fffaea'],
 };
 
-export function createStaghorn({ seed = 11, size = 1, palette = 'tan', trunks = 9, depth = 4 } = {}) {
+export function createStaghorn({ seed = 11, size = 1, palette = 'tan', trunks = 9, depth = 4, radial = 7, segLen = 0.025, caps = 'round' } = {}) {
   const rng = new Rng(seed);
   const pal = PALETTES[palette].map((c) => new THREE.Color(c));
   const batch = new TubeBatch({ aTip: 1 });
@@ -30,7 +30,7 @@ export function createStaghorn({ seed = 11, size = 1, palette = 'tan', trunks = 
 
   // tipness: 0 at colony base, 1 at branch tips; driven by generation + position.
   function branch(start, dir, length, r0, gen, tip0) {
-    const segs = Math.max(4, Math.round(length / 0.025));
+    const segs = Math.max(4, Math.round(length / segLen));
     const pts = [];
     const radii = [];
     const p = start.clone();
@@ -51,8 +51,8 @@ export function createStaghorn({ seed = 11, size = 1, palette = 'tan', trunks = 
     const tipStart = tip0;
     const tipEnd = isLeaf ? 1 : tip0 + (1 - tip0) * 0.45;
     batch.add(pts, radii, {
-      radial: 7,
-      cap: isLeaf ? 'round' : 'round',
+      radial,
+      cap: caps,
       color: (i) => colorAt(tipStart + (tipEnd - tipStart) * (i / segs)),
       attr: (_, i) => tipStart + (tipEnd - tipStart) * (i / segs),
     });
