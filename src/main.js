@@ -7,16 +7,30 @@ import { setupUI } from './ui.js';
 const params = new URLSearchParams(location.search);
 const shot = params.has('shot');
 const container = document.getElementById('app');
-const app = new App(container, { shot });
-const asset = params.get('asset');
+const errorEl = document.getElementById('error');
+const known = (name) => Boolean(name && (DECOR[name] || FISH[name]));
 
-try {
-  if (asset) buildShowcase(app, asset);
-  else buildReef(app);
-} catch (e) {
-  console.error(e);
-  document.getElementById('error').textContent = String(e.message || e);
+// The asset can come from ?asset=name or a #name deep link.
+const initial = params.get('asset') || (known(location.hash.slice(1)) ? location.hash.slice(1) : null);
+
+let app = null;
+
+function boot(asset) {
+  if (app) app.dispose();
+  errorEl.textContent = '';
+  app = new App(container, { shot });
+  try {
+    if (asset) buildShowcase(app, asset);
+    else buildReef(app);
+  } catch (e) {
+    console.error(e);
+    errorEl.textContent = String(e.message || e);
+  }
+  window.app = app;
+  return app;
 }
+
+boot(initial);
 
 // Optional camera override for screenshots: ?cam=x,y,z&target=x,y,z
 const vec = (s) => s.split(',').map(Number);
@@ -28,9 +42,6 @@ if (params.get('fov')) {
 }
 app.controls.update();
 
-if (!shot) setupUI(app, { asset, DECOR, FISH });
-
-window.app = app;
 if (shot) {
   // Deterministic warm-up so fish have spread out, then signal readiness.
   const warm = Number(params.get('t') ?? 6);
@@ -42,5 +53,15 @@ if (shot) {
     window.__ready = true;
   });
 } else {
+  const select = (asset) => {
+    try {
+      history.replaceState(null, '', asset ? `#${asset}` : location.pathname + location.search.replace(/[?&]asset=[^&]*/, ''));
+    } catch {
+      /* sandboxed frames may refuse history changes */
+    }
+    boot(asset).start();
+    setupUI(app, { asset, DECOR, FISH, onSelect: select });
+  };
   app.start();
+  setupUI(app, { asset: initial, DECOR, FISH, onSelect: select });
 }

@@ -75,8 +75,19 @@ export class App {
     this.time = 0;
     this.groundFn = () => 0;
     this.timer = new THREE.Timer();
-    window.addEventListener('resize', () => this.resize());
+    this._onResize = () => this.resize();
+    window.addEventListener('resize', this._onResize);
     this.resize();
+  }
+
+  dispose() {
+    cancelAnimationFrame(this._raf);
+    clearTimeout(this._idle);
+    window.removeEventListener('resize', this._onResize);
+    this.controls.dispose();
+    this.composer.dispose();
+    this.renderer.dispose();
+    this.renderer.domElement.remove();
   }
 
   syncSun() {
