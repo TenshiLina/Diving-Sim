@@ -10,9 +10,10 @@ const server = await createServer({ server: { port: 5192 }, logLevel: 'error' })
 await server.listen();
 const b = await pw.chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const p = await b.newPage({ viewport: { width: 960, height: 540 } });
-await p.goto('http://localhost:5195/?shot&t=2&' + (process.argv[2] || ''), { waitUntil: 'commit', timeout: 120000 });
+await p.goto('http://localhost:5192/?shot&t=2&' + (process.argv[2] || ''), { waitUntil: 'commit', timeout: 120000 });
 await p.waitForFunction(() => window.__ready === true, null, { timeout: 300000 });
 console.log('boot ms', await p.evaluate(() => window.__bootMs));
+console.log(await p.evaluate(() => { const g = window.app.scene.userData.gbr; return JSON.stringify({ turtles: g.turtles.map((t) => t.pos.toArray().map((v) => +v.toFixed(1))), mantas: g.rays[2].agents.map((a) => a.pos.toArray().map((v) => +v.toFixed(1))), eagles: g.rays[1].agents.map((a) => a.pos.toArray().map((v) => +v.toFixed(1))) }); }));
 const r = await p.evaluate(() => {
   const app = window.app; const out = {}; const cam = app.camera;
   app.scene.traverseVisible((o) => {

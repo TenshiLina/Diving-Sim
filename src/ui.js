@@ -1,12 +1,13 @@
 // Overlay: title, scene/asset picker, controls hint and tour indicator.
 
-export function setupUI(app, { asset, DECOR, FISH, RAYS, onSelect }) {
+export function setupUI(app, { asset, DECOR, FISH, RAYS, ANIMALS, onSelect }) {
   const el = document.getElementById('ui');
   const opt = (k, label) => `<option value="${k}" ${k === (asset || '') ? 'selected' : ''}>${label}</option>`;
   const opts = [
     `<optgroup label="Dive sites">${opt('', 'Great Barrier Reef')}${opt('aquarium', 'Aquarium (proof of concept)')}</optgroup>`,
     `<optgroup label="Fish">${Object.entries(FISH).map(([k, v]) => opt(k, v.label)).join('')}</optgroup>`,
     `<optgroup label="Rays">${Object.entries(RAYS).map(([k, v]) => opt(k, v.label)).join('')}</optgroup>`,
+    `<optgroup label="Turtles & octopus">${Object.entries(ANIMALS).map(([k, v]) => opt(k, v.label)).join('')}</optgroup>`,
     `<optgroup label="Coral, clams & plants">${Object.entries(DECOR).map(([k, v]) => opt(k, v.label)).join('')}</optgroup>`,
   ].join('');
   const swim = Boolean(app.controls.isSwim);
@@ -14,7 +15,7 @@ export function setupUI(app, { asset, DECOR, FISH, RAYS, onSelect }) {
     ? 'Fringing reef, Great Barrier Reef'
     : asset === 'aquarium'
       ? 'Great Barrier Reef, proof of concept'
-      : FISH[asset]?.latin ?? RAYS[asset]?.latin ?? DECOR[asset]?.label ?? '';
+      : FISH[asset]?.latin ?? RAYS[asset]?.latin ?? ANIMALS[asset]?.latin ?? DECOR[asset]?.label ?? '';
   const touch = matchMedia('(pointer: coarse)').matches;
   const hint = swim
     ? touch

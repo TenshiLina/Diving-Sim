@@ -41,3 +41,9 @@ export const FISH = Object.fromEntries(
 export const RAYS = Object.fromEntries(
   Object.entries(RAY_SPECIES).map(([k, s]) => [k, { label: s.name, latin: s.latin, size: s.length }]),
 );
+
+// Other animals with their own rigs (not fish-builder or ray-builder species).
+export const ANIMALS = {
+  turtle: { label: 'Green sea turtle', latin: 'Chelonia mydas' },
+  octopus: { label: 'Day octopus', latin: 'Octopus cyanea' },
+};

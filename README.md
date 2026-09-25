@@ -74,10 +74,35 @@ entry and only works once it has been built.
   - chromis clouds over staghorn;
   - blue tang groups and butterflyfish pairs;
   - blue-spotted ribbontail rays that cruise the sand and settle to rest;
-  - a trio of spotted eagle rays flying in formation over the slope.
-  Schools out of view keep simulating but aren't drawn.
+  - a trio of spotted eagle rays flying in formation over the slope;
+  - Moorish idols and parrotfish around the coral;
+  - three whitetip reef sharks patrolling the foot of the slope;
+  - two reef mantas cruising high over the slope;
+  - green sea turtles that alternate power strokes with glides and rest on
+    the reef;
+  - day octopuses that sit camouflaged, flash colour, crawl, and jet away.
+  Schools and animals out of view keep simulating but aren't drawn.
 
-New assets in this build:
+![New species](docs/species-2.jpg)
+
+Species added in the second round:
+
+- **Moorish idol, steephead parrotfish, whitetip reef shark:** built with the
+  fish builder. The shark has a heterocercal tail, horizontal pectoral fins,
+  gill slits and white fin tips.
+- **Reef manta ray:** built with the ray builder. It has wide swept wings, the
+  white shoulder patches of *Mobula alfredi*, and rolled cephalic fins.
+- **Green sea turtle (`src/assets/turtle/`):** a small rig with a domed
+  carapace with Voronoi scutes and tortoiseshell streaks, scaled head and
+  flippers, and a front-flipper flight stroke with rear-flipper steering.
+- **Day octopus (`src/assets/octopus/`):** the arms are rebuilt every frame
+  from procedural centrelines, blending a spread and curling sitting pose, a
+  crawling gait, and a mantle-first jet with trailing arms. Its skin
+  coordinates move with the arms, so the mottling never slides. The colour
+  shifts between reef camouflage and a dark display with moving
+  "passing cloud" bands.
+
+Assets added in the first reef build:
 
 - **Giant clam (Tridacna):** a fluted shell whose folds give the gape its
   zigzag. The mantle is patterned, breathes slowly and glows slightly. It
@@ -96,6 +121,9 @@ pattern, and swims on the GPU with a travelling body wave and rowing pectoral fi
 | Species | Notes |
 | --- | --- |
 | Clown anemonefish (*Amphiprion percula*) | Stays close to its anemone |
+| Moorish idol (*Zanclus cornutus*) | Small groups; long white dorsal streamer |
+| Steephead parrotfish (*Chlorurus microrhinos*) | Terminal-phase male colours; grazes low over coral |
+| Whitetip reef shark (*Triaenodon obesus*) | Patrols the foot of the slope; mostly solitary |
 | Blue tang (*Paracanthurus hepatus*) | Swims loose laps around the bommie |
 | Blue-green chromis (*Chromis viridis*) | Tight school above the staghorn |
 | Threadfin butterflyfish (*Chaetodon auriga*) | Swims as a pair; false eyespot on the dorsal fin |
@@ -142,7 +170,7 @@ src/
   scenes/      reef.js (the aquarium), showcase.js (single-asset viewer)
   util/        noise, curves, tube builder, GLSL snippets, reaction-diffusion
 tools/
-  screenshot.mjs   headless renders for visual iteration (reef: tour=0..1, near=clam|anemone|ribbontail|eagleRay|chromis)
+  screenshot.mjs   headless renders for visual iteration (reef: tour=0..1, near=clam|anemone|ribbontail|eagleRay|manta|turtle|octopus|shark|moorish|parrot|chromis)
   probe.mjs        triangle budget per asset group, boot time
   inline-build.mjs single-file build (npm run build:single)
   sheet.py         contact sheets of renders

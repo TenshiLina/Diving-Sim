@@ -12,6 +12,39 @@ import { monotone } from '../../util/curves.js';
 import { underwater } from '../../water/underwater.js';
 
 export const RAY_SPECIES = {
+  manta: {
+    name: 'Reef manta ray',
+    latin: 'Mobula alfredi',
+    length: 1.25,
+    // Blunt, wide mouth at the front; long swept wings.
+    halfWidth: [[0.5, 0.12], [0.44, 0.2], [0.3, 0.45], [0.12, 0.95], [-0.02, 1.4], [-0.1, 1.5], [-0.16, 1.25], [-0.25, 0.55], [-0.36, 0.2], [-0.5, 0.0]],
+    thickness: 0.11,
+    tail: { length: 0.35, radius: 0.02 },
+    wave: { amp: 0.45, waves: 0.28, speed: 0.4, flap: 1.0 },
+    cephalic: { length: 0.16, radius: 0.035, offset: 0.1 },
+    belly: '#f2f2ee',
+    paint(ctx, b, W, H) {
+      // Black back with the white "shoulder" patches of the reef manta.
+      ctx.fillStyle = '#16181c';
+      ctx.fillRect(0, 0, W, H);
+      const cx = W * 0.83;
+      ctx.fillStyle = 'rgba(235,238,240,0.95)';
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(cx + W * 0.05, H / 2 + side * H * 0.09);
+        ctx.quadraticCurveTo(cx - W * 0.02, H / 2 + side * H * 0.2, cx - W * 0.12, H / 2 + side * H * 0.32);
+        ctx.quadraticCurveTo(cx - W * 0.06, H / 2 + side * H * 0.16, cx - W * 0.04, H / 2 + side * H * 0.08);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // Dark mid-line between the patches, soft vignette to the wing tips.
+      const g = ctx.createRadialGradient(W * 0.72, H / 2, H * 0.1, W * 0.72, H / 2, H * 0.55);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(1, 'rgba(0,0,0,0.35)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+    },
+  },
   ribbontail: {
     name: 'Blue-spotted ribbontail ray',
     latin: 'Taeniura lymma',
@@ -149,6 +182,11 @@ export function buildRay(spec) {
       }
     }
   }
+  // Close the front edge (matters for blunt-headed rays like the manta).
+  {
+    const bot = (NX + 1) * (NS + 1);
+    for (let j = 0; j < NS; j++) idx.push(j, bot + j, j + 1, j + 1, bot + j, bot + j + 1);
+  }
   // Tail: tapered tube.
   const TS = 40, TR = 6;
   const tb = pos.length / 3;
@@ -168,6 +206,34 @@ export function buildRay(spec) {
     for (let j = 0; j < TR; j++) {
       const a = tb + i * TR + j, b = tb + i * TR + ((j + 1) % TR);
       idx.push(a, b, a + TR, b, b + TR, a + TR);
+    }
+  }
+  // Manta cephalic fins: two rolled scrolls projecting from the mouth corners.
+  if (spec.cephalic) {
+    const { length: cl, radius: cr, offset } = spec.cephalic;
+    const CU = 10, CV = 10;
+    for (const side of [-1, 1]) {
+      const cb = pos.length / 3;
+      for (let i = 0; i <= CU; i++) {
+        const u = i / CU;
+        const x = xmax - 0.02 + u * cl;
+        const r = cr * (1 - 0.35 * u);
+        for (let j = 0; j <= CV; j++) {
+          const a = (j / CV) * Math.PI * 1.6 - 0.3; // open scroll
+          const rr = r * (1 - 0.25 * (j / CV));
+          const y = -Math.cos(a) * rr * 0.8 - u * 0.02;
+          const z = side * (offset + Math.sin(a) * rr * 0.6);
+          pos.push(x, y, z);
+          uv.push(0.99, 0.5 + z / (2 * maxW));
+          span.push(side * 0.12);
+          part.push(0);
+        }
+      }
+      for (let i = 0; i < CU; i++)
+        for (let j = 0; j < CV; j++) {
+          const a = cb + i * (CV + 1) + j, b2 = a + CV + 1;
+          idx.push(a, b2, a + 1, a + 1, b2, b2 + 1);
+        }
     }
   }
   const geo = new THREE.BufferGeometry();
@@ -380,11 +446,13 @@ export class RayGroup {
         a.vel.addScaledVector(steer, dt);
         // Stay off the bottom.
         const g = o.groundFn(a.pos.x, a.pos.z);
-        const minY = g + (o.mode === 'bottom' ? 0.12 : 1.5);
+        const minY = Math.min(g + (o.mode === 'bottom' ? 0.12 : 1.5), o.maxY - 0.3);
         if (a.pos.y < minY) a.vel.y += (minY - a.pos.y) * dt * 3;
+        if (a.pos.y > o.maxY) a.vel.y -= (a.pos.y - o.maxY) * dt * 3;
       }
       const prevYaw = Math.atan2(a.vel.z, a.vel.x);
       a.pos.addScaledVector(a.vel, dt);
+      a.pos.y = Math.min(a.pos.y, o.maxY); // never break the surface
       const sp = a.vel.length();
       // Orientation: face velocity (keep last heading when stopped).
       if (sp > 0.02) {

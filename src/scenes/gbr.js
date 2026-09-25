@@ -15,6 +15,8 @@ import { createGiantClam } from '../assets/invertebrates/giantClam.js';
 import { buildRay, RayGroup, RAY_SPECIES } from '../assets/rays/rays.js';
 import { getFish } from '../assets/catalog.js';
 import { FishSchool } from '../assets/fish/school.js';
+import { TurtleAgent } from '../assets/turtle/turtle.js';
+import { OctopusAgent } from '../assets/octopus/octopus.js';
 import { instanceVariants } from '../util/instancing.js';
 import { Rng, SimplexNoise } from '../util/noise.js';
 import { water } from '../water/underwater.js';
@@ -240,6 +242,25 @@ export function buildGBR(app, { tour = true } = {}) {
     });
   }
 
+  for (let i = 0; i < 5; i++) {
+    addSchool('moorishIdol', {
+      count: rng.int(2, 3), home: reefPoint(0, 0.9), homeRadius: 6, homeStrength: 0.6, cruise: 0.25, speed: [0.1, 0.45],
+      neighbor: 1.2, separation: 0.35, wAli: 1.0, wCoh: 0.8, wander: 0.6, minHeight: 0.8, seed: 90 + i,
+    });
+  }
+  // Parrotfish graze close over the coral in small groups.
+  for (let i = 0; i < 6; i++) {
+    addSchool('parrotfish', {
+      count: rng.int(2, 4), home: reefPoint(0, 0.85), homeRadius: 8, homeStrength: 0.5, cruise: 0.3, speed: [0.12, 0.55],
+      neighbor: 1.6, separation: 0.6, wAli: 0.6, wCoh: 0.5, wander: 0.8, minHeight: 0.55, seed: 110 + i,
+    });
+  }
+  // Whitetip reef sharks patrol the foot of the slope, each mostly on its own.
+  addSchool('whitetipShark', {
+    count: 3, home: new THREE.Vector3(12, field.height(12, 0) + 1.2, 0), homeRadius: 26, homeStrength: 0.35, cruise: 0.45, speed: [0.3, 0.7],
+    neighbor: 6, separation: 3, wAli: 0.15, wCoh: 0.05, wander: 0.5, minHeight: 0.5, maxPitch: 0.2, maxAccel: 0.5, seed: 130,
+  });
+
   // --- Rays -----------------------------------------------------------------
   const sandPoint = (r) => {
     for (let k = 0; k < 60; k++) {
@@ -256,9 +277,58 @@ export function buildGBR(app, { tour = true } = {}) {
     count: 3, mode: 'cruise', speed: 0.55, height: 4.5, maxY: surfaceY - 1.5, groundFn: field.height,
     region: { minX: -10, maxX: 45, minZ: -35, maxZ: 35 }, rng: () => rayRng.next(),
   });
-  for (const g of [ribbontails, eagles]) {
+  const mantas = new RayGroup(buildRay(RAY_SPECIES.manta), {
+    count: 2, mode: 'cruise', speed: 0.5, height: 6, maxY: surfaceY - 1.3, groundFn: field.height,
+    region: { minX: -12, maxX: 30, minZ: -35, maxZ: 35 }, rng: () => rayRng.next(),
+  });
+  for (const g of [ribbontails, eagles, mantas]) {
     app.add(g.mesh);
     app.onUpdate((dt, t) => g.update(dt, t));
+  }
+
+  // --- Turtles and octopuses -------------------------------------------------------
+  const lifeRng = new Rng(314);
+  const lr = () => lifeRng.next();
+  const cull = (obj, p, range = 50) => (obj.visible = Math.hypot(p.x - app.camera.position.x, p.z - app.camera.position.z) < range);
+  const turtles = [];
+  for (let i = 0; i < 3; i++) {
+    const start = reefPoint(0.1, 0.9).add(new THREE.Vector3(0, 1.0, 0));
+    const t = new TurtleAgent({
+      groundFn: field.height, rng: lr, maxY: surfaceY - 0.8, seed: i + 1, length: 0.9 + lr() * 0.3, start,
+      pickTarget: (r) => {
+        const p = reefPoint(0, 1);
+        return new THREE.Vector3(p.x, 0.8 + r() * 2.5, p.z); // y = height above the reef
+      },
+    });
+    app.add(t.group);
+    app.onUpdate((dt, time) => {
+      t.update(dt, time);
+      cull(t.group, t.pos);
+    });
+    turtles.push(t);
+  }
+  const octopuses = [];
+  const reefSpot = (r, from, radius) => {
+    for (let k = 0; k < 30; k++) {
+      const a = r() * Math.PI * 2, d = radius * (0.4 + 0.6 * r());
+      const x = from.x + Math.cos(a) * d, z = from.z + Math.sin(a) * d;
+      if (field.reef(x, z) > 0.6 && surfaceY - field.height(x, z) > 1.2) return new THREE.Vector3(x, 0, z);
+    }
+    return null;
+  };
+  const camos = [['#6a5a3c', '#a89468'], ['#5a5a3a', '#9aa070'], ['#6a4a40', '#b08a78'], ['#4f4a38', '#8a8460']];
+  for (let i = 0; i < 5; i++) {
+    const p = reefPoint(0, 0.8);
+    const oa = new OctopusAgent({
+      groundFn: field.height, normalFn: field.normal, pickSpot: reefSpot, rng: lr,
+      start: new THREE.Vector3(p.x, 0, p.z), size: 0.9 + lr() * 0.4, seed: 20 + i, camo: camos[i % camos.length],
+    });
+    app.add(oa.group);
+    app.onUpdate((dt, time) => {
+      const near = cull(oa.group, oa.pos, 30);
+      oa.update(dt, time, near);
+    });
+    octopuses.push(oa);
   }
 
   // --- Diver + tour -------------------------------------------------------------
@@ -301,12 +371,19 @@ export function buildGBR(app, { tour = true } = {}) {
     } else if (kind === 'ribbontail') p = ribbontails.agents[0].pos.clone();
     else if (kind === 'eagleRay') p = eagles.agents[0].pos.clone();
     else if (kind === 'chromis') p = chromisHomes[0].clone();
+    else if (kind === 'manta') p = mantas.agents[0].pos.clone();
+    else if (kind === 'turtle') p = turtles[0].pos.clone();
+    else if (kind === 'octopus') p = octopuses[0].pos.clone().add(new THREE.Vector3(0, 0.1, 0));
+    else {
+      const s = schools.find((q) => q.built.spec.name.toLowerCase().includes(kind.toLowerCase()));
+      if (s) p = s.pos[0].clone();
+    }
     if (!p) return;
-    const d = kind === 'eagleRay' ? 4.5 : kind === 'chromis' ? 2.2 : 1.6;
-    const cam = p.clone().add(new THREE.Vector3(d, d * 0.55, d * 0.6));
-    cam.y = Math.max(cam.y, field.height(cam.x, cam.z) + 0.6);
+    const d = kind === 'manta' ? 6.5 : kind === 'eagleRay' || kind === 'shark' ? 4.5 : kind === 'turtle' ? 2.6 : kind === 'chromis' ? 2.2 : kind === 'octopus' ? 1.1 : 1.6;
+    const cam = p.clone().add(new THREE.Vector3(d, d * (kind === 'manta' ? -0.25 : 0.55), d * 0.6));
+    cam.y = THREE.MathUtils.clamp(cam.y, field.height(cam.x, cam.z) + 0.6, surfaceY - 0.4);
     controls.setPose(cam, p);
   };
 
-  return { field, counts, schools, rays: [ribbontails, eagles], tourCurve, controls, frame };
+  return { field, counts, schools, rays: [ribbontails, eagles, mantas], turtles, octopuses, tourCurve, controls, frame };
 }

@@ -2,7 +2,7 @@ import { App } from './core/app.js';
 import { buildReef } from './scenes/reef.js';
 import { buildShowcase } from './scenes/showcase.js';
 import { buildGBR } from './scenes/gbr.js';
-import { DECOR, FISH, RAYS } from './assets/catalog.js';
+import { DECOR, FISH, RAYS, ANIMALS } from './assets/catalog.js';
 import { setupUI } from './ui.js';
 import { installGlobalHandlers, showError, clearErrors, webgl2Problem, pickQuality } from './core/diagnostics.js';
 
@@ -12,7 +12,7 @@ const params = new URLSearchParams(location.search);
 const shot = params.has('shot');
 const container = document.getElementById('app');
 const quality = pickQuality();
-const known = (name) => Boolean(name && (name === 'aquarium' || DECOR[name] || FISH[name] || RAYS[name]));
+const known = (name) => Boolean(name && (name === 'aquarium' || DECOR[name] || FISH[name] || RAYS[name] || ANIMALS[name]));
 
 // What to show: the reef by default, `aquarium` for the proof-of-concept
 // tank, or a single asset. From ?asset=name or a #name deep link.
@@ -78,8 +78,11 @@ if (shot) {
   const steps = Math.ceil(warm / 0.05);
   for (let i = 0; i < steps; i++) app.step(0.05);
   if (app.scene.userData.frameNear) {
-    app.scene.userData.gbr.frame(app.scene.userData.frameNear);
-    app.step(0.05);
+    // Two steps: the first refreshes distance culling for the new viewpoint.
+    for (let i = 0; i < 2; i++) {
+      app.scene.userData.gbr.frame(app.scene.userData.frameNear);
+      app.step(0.05);
+    }
   }
   app.render();
   requestAnimationFrame(() => {
@@ -99,8 +102,8 @@ if (shot) {
       /* sandboxed frames may refuse history changes */
     }
     boot(asset).start();
-    setupUI(app, { asset, DECOR, FISH, RAYS, onSelect: select });
+    setupUI(app, { asset, DECOR, FISH, RAYS, ANIMALS, onSelect: select });
   };
   app.start();
-  setupUI(app, { asset: initial, DECOR, FISH, RAYS, onSelect: select });
+  setupUI(app, { asset: initial, DECOR, FISH, RAYS, ANIMALS, onSelect: select });
 }
