@@ -71,11 +71,10 @@ export function watchRenderer(renderer) {
   });
 }
 
-/** Rendering tier: phones and tablets get a lighter setup. */
+/**
+ * Rendering tier. Everyone gets the full look by default; `?quality=low` is an
+ * opt-in for devices that struggle (lower resolution, no MSAA, smaller shadows).
+ */
 export function pickQuality() {
-  const q = new URLSearchParams(location.search).get('quality');
-  if (q === 'low' || q === 'high') return q;
-  const touch = matchMedia('(pointer: coarse)').matches;
-  const small = Math.min(screen.width, screen.height) < 820;
-  return touch && small ? 'low' : 'high';
+  return new URLSearchParams(location.search).get('quality') === 'low' ? 'low' : 'high';
 }

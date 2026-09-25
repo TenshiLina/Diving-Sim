@@ -27,9 +27,9 @@ entry and only works once it has been built.
 - **Single file:** `dist/reef-aquarium.html` has the app script inlined. Use
   it for hosts that block separate script files, such as Claude artifacts, or
   to share the aquarium as one file.
-- Add `?quality=low` or `?quality=high` to override the automatic choice.
-  Phones get the low tier by default, which lowers the resolution, turns off
-  MSAA and uses smaller shadows.
+- Add `?quality=low` for devices that struggle. It lowers the resolution,
+  turns off MSAA and uses smaller shadows. The full look is the default
+  everywhere.
 - If something fails, the reason appears on screen: no WebGL 2, a shader that
   won't compile on that GPU, the GPU resetting, or a script error. Include
   that text when reporting a problem.
